@@ -1,0 +1,45 @@
+name: InitTemplate
+on:
+  push:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    name: Initialize Repo
+    runs-on: ubuntu-latest
+    if: github.event.repository.name != 'ExampleAddon'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+
+      - name: Initialize Repo
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          chmod +x ./init.sh
+
+          raw_repo_name=$(echo "$GITHUB_REPOSITORY" | cut -d/ -f2)
+          modid=$(echo "$raw_repo_name" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')
+
+          pkg="org.cobalt.${modid}"
+          proj="${raw_repo_name}"
+
+          echo "Package: $pkg"
+          echo "Project: $proj"
+          echo "Modid:   $modid"
+
+          ./init.sh "$pkg" "$proj" "$modid"
+
+          git add .
+          git commit -m "Initialize template for $proj"
+          git push
+
+      - name: Push changes
+        uses: ad-m/github-push-action@v0.8.0
+        with:
+          branch: ${{ github.ref }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "addon",
+  "version": "1.0.0",
+  "name": "Addon",
+  "description": "Needed for addon loading in development.",
+  "authors": [
+    "QuiteBoring",
+    "Twiston",
+    "oblongboot"
+  ],
+  "contact": {
+    "homepage": "https://cobalt.quiteboring.dev/",
+    "sources": "https://github.com/CobaltScripts/Cobalt"
+  },
+  "license": "CC0-1.0",
+  "icon": "assets/exampleaddon/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "cobalt": [
+      {
+        "adapter": "kotlin",
+        "value": "com.example.ExampleAddon"
+      }
+    ]
+  },
+  "mixins": [
+    "exampleaddon.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=21",
+    "fabric-language-kotlin": ">=${fabric_kotlin_version}"
+  }
+}

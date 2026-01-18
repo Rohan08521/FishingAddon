@@ -1,0 +1,11 @@
+{
+  "id": "example_addon",
+  "name": "Example Addon",
+  "version": "1.0.0",
+  "entrypoints": [
+    "com.example.ExampleAddon"
+  ],
+  "mixins": [
+    "exampleaddon.mixins.json"
+  ]
+}
