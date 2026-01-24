@@ -34,7 +34,7 @@ dependencies {
   modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
   modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_version")}")
 
-  modImplementation("org.cobalt:cobalt:1.0.0")
+  modImplementation(files("libs/Cobalt-1.0.0.jar"))
   modImplementation("meteordevelopment:discord-ipc:1.1")
   modImplementation("org.reflections:reflections:0.10.2")
 
