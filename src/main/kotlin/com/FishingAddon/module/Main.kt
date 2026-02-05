@@ -26,7 +26,6 @@ object Main : Module(
   private var isToggled = false
   private var wasKeyPressed = false
   private var macroState = MacroState.IDLE
-  private var castDelay = 500
   private val clock = Clock()
   private val mc = Minecraft.getInstance()
 
@@ -38,8 +37,6 @@ object Main : Module(
     RESETTING,
 
   }
-
-
 
   fun detectFishbite(): Boolean {
     val entities = mc.level?.entitiesForRendering() ?: return false
@@ -62,30 +59,23 @@ object Main : Module(
     }
     return fishBiteStands > 0
   }
-
-
-
   fun swapToFishingRod() {
     InventoryUtils.findItemInHotbar("rod")
     InventoryUtils.holdHotbarSlot(InventoryUtils.findItemInHotbar("rod"))
   }
-
   fun start() {
     isToggled = true
     MouseUtils.ungrabMouse()
     macroState = MacroState.SWAP_TO_ROD
   }
-
   fun stop() {
     isToggled = false
     MouseUtils.grabMouse()
     resetStates()
   }
-
   fun resetStates() {
     macroState = MacroState.IDLE
   }
-
   @SubscribeEvent
   fun keybindListener(event: TickEvent) {
     val isPressed = keyBind.isPressed()
@@ -103,19 +93,15 @@ object Main : Module(
     }
     wasKeyPressed = isPressed
   }
-
   fun isToggled(): Boolean {
     return isToggled
   }
-
   @SubscribeEvent
   fun onTick(event: TickEvent) {
     if (!isToggled) {
       return
     }
-
     if (!clock.passed()) return
-
     when (macroState) {
       MacroState.SWAP_TO_ROD -> {
         swapToFishingRod()
@@ -128,7 +114,7 @@ object Main : Module(
       }
       MacroState.REELING -> {
         if (detectFishbite()) {
-          clock.schedule(Random.nextInt(50,150))
+          clock.schedule(Random.nextInt(150,350))
           macroState = MacroState.RESETTING
           MouseUtils.rightClick()
         }

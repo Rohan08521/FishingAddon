@@ -44,7 +44,7 @@ dependencies {
   modImplementation("org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-macos")
   modImplementation("org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-macos-arm64")
 
-  modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
+  modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.2")
 }
 
 tasks {
