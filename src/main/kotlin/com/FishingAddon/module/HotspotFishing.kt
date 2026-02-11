@@ -1,4 +1,7 @@
 package com.FishingAddon.module
 
-class HotspotFishing {
+import org.cobalt.api.module.Module
+
+object HotspotFishing : Module("HotspotFishing Settings"){
+
 }

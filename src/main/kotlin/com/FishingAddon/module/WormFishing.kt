@@ -1,4 +1,8 @@
 package com.FishingAddon.module
 
-class WormFishing {
+import org.cobalt.api.module.Module
+
+object WormFishing : Module("WormFishing Settings"){
+
 }
+

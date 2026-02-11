@@ -1,5 +1,8 @@
 package com.FishingAddon.module
 
+import net.minecraft.ChatFormatting
+import net.minecraft.client.Minecraft
+import net.minecraft.world.entity.decoration.ArmorStand
 import org.cobalt.api.event.annotation.SubscribeEvent
 import org.cobalt.api.event.impl.client.TickEvent
 import org.cobalt.api.module.Module
@@ -9,6 +12,7 @@ import org.cobalt.api.util.MouseUtils
 import org.cobalt.api.util.helper.KeyBind
 import org.lwjgl.glfw.GLFW
 import org.cobalt.api.module.setting.impl.ModeSetting
+import org.cobalt.api.util.InventoryUtils
 
 object Main : Module(
   name = "Main tab",
@@ -22,11 +26,12 @@ object Main : Module(
     name = "FishingMode",
     description = "Fishing mode setting",
     defaultValue = 0,
-    options = arrayOf("Normal", "SurfStriders(WIP)", "Worm fishing(WIP)", "Hotspot fishing(WIP)", "Piscary fishing(WIP)")
+    options = arrayOf("Normal", "SurfStriders", "Worm fishing(WIP)", "Hotspot fishing(WIP)", "Piscary fishing(WIP)")
   )
 
   private var isToggled = false
   private var wasKeyPressed = false
+  private val mc = Minecraft.getInstance()
 
   fun start() {
     isToggled = true
@@ -34,6 +39,7 @@ object Main : Module(
 
     when (mode) {
       0 -> Normal.start()
+      1 -> SurfStriders.start()
     }
   }
 
@@ -43,6 +49,7 @@ object Main : Module(
 
     when (mode) {
       0 -> Normal.resetStates()
+      1 -> SurfStriders.resetStates()
     }
   }
 
@@ -76,7 +83,42 @@ object Main : Module(
 
     when (mode) {
       0 -> Normal.onTick()
+      1 -> SurfStriders.onTick()
     }
   }
+  internal fun swapToFishingRod() {
+    val slot = InventoryUtils.findItemInHotbar("rod")
+
+    if (slot == -1) {
+      ChatUtils.sendMessage("${ChatFormatting.RED}No Fishing Rod found in hotbar! Disabling macro.${ChatFormatting.RESET}")
+      stop()
+      return
+    }
+
+    InventoryUtils.holdHotbarSlot(slot)
+  }
+
+  internal fun detectFishbite(): Boolean {
+    val entities = mc.level?.entitiesForRendering() ?: return false
+    var armorStandsChecked = 0
+    var fishBiteStands = 0
+    for (entity in entities) {
+      if (entity is ArmorStand) {
+        armorStandsChecked++
+
+        if (entity.hasCustomName()) {
+          val customName = entity.customName
+          if (customName != null) {
+            val nameString = customName.string
+            if (nameString == "!!!") {
+              fishBiteStands++
+            }
+          }
+        }
+      }
+    }
+    return fishBiteStands > 0
+  }
+
 }
 
