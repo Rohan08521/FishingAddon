@@ -22,7 +22,7 @@ repositories {
   mavenCentral()
   maven("https://maven.meteordev.org/releases")
   maven("https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1")
-  maven("https://maven.quiteboring.dev/")
+  maven("https://jitpack.io/")
 }
 
 dependencies {
@@ -34,16 +34,15 @@ dependencies {
   modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
   modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_version")}")
 
-  modImplementation(files("libs/Cobalt-1.0.0.jar"))
+  modImplementation("com.github.CobaltScripts:Cobalt:945a71ff93")
   modImplementation("meteordevelopment:discord-ipc:1.1")
   modImplementation("org.reflections:reflections:0.10.2")
 
   modImplementation("org.lwjgl:lwjgl-nanovg:${lwjglVersion}")
-  modImplementation("org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-windows")
-  modImplementation("org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-linux")
-  modImplementation("org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-macos")
-  modImplementation("org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-macos-arm64")
-
+  listOf("windows", "linux", "macos", "macos-arm64").forEach {
+    modImplementation("org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-$it")
+  }
+  runtimeOnly("org.apache.httpcomponents:httpclient:4.5.14")
   modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.2")
 }
 
