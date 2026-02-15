@@ -62,6 +62,10 @@ object Normal : Module(
 
   internal fun onTick() {
     if (!clock.passed()) return
+
+    //check: ensure player world and gameMode exist
+    if (mc.player == null || mc.level == null || mc.gameMode == null) return
+
     when (macroState) {
       MacroState.SWAP_TO_ROD -> {
         swapToFishingRod()
@@ -87,9 +91,11 @@ object Normal : Module(
             currentState?.ordinal == 2
           } ?: false
 
-          if (!isBobbing && System.currentTimeMillis() - waitingStartTime > bobberTimeout.toLong()) {
+          if (!isBobbing && bobber != null && System.currentTimeMillis() - waitingStartTime > bobberTimeout.toLong()) {
             macroState = MacroState.REELING
             clock.schedule(Random.nextInt(100, 200))
+          } else if (bobber == null && System.currentTimeMillis() - waitingStartTime > bobberTimeout.toLong()) {
+            macroState = MacroState.CASTING
           }
         }
       }

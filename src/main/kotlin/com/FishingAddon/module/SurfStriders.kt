@@ -2,6 +2,7 @@ package com.FishingAddon.module
 
 import com.FishingAddon.module.Main.detectFishbite
 import com.FishingAddon.module.Main.swapToFishingRod
+import com.FishingAddon.module.SurfStriders.targetStrider
 import org.cobalt.api.module.Module
 import org.cobalt.api.module.setting.impl.ModeSetting
 import org.cobalt.api.module.setting.impl.RangeSetting
@@ -76,14 +77,14 @@ object SurfStriders : Module("SurfStriders Settings"){
     CASTING,
     WAITING,
     REELING,
-    // killing with flay/whip
+    // killing with flay/whip , done
     POST_REEL_DECIDE,
     ROTATE_FLAY,
     SOUL_SWAP,
     SOUL_THROW,
     AXE_SWAP,
-    // killing with foraging axe melee
-    ROTATE_MELEE,
+    // killing with foraging axe melee , done hopefully
+    ROTATE_TO_SURFSTRIDER_MELEE,
     MELEE_ATTACK,
     // resetting
     RESET,
@@ -144,6 +145,10 @@ object SurfStriders : Module("SurfStriders Settings"){
 
   internal fun onTick() {
     if (!clock.passed()) return
+
+    //check: ensure player, level, and gameMode exist
+    if (mc.player == null || mc.level == null || mc.gameMode == null) return
+
     when (macroState) {
       MacroState.SWAP_TO_ROD -> {
         swapToFishingRod()
@@ -238,12 +243,26 @@ object SurfStriders : Module("SurfStriders Settings"){
         }
       }
 
-      MacroState.ROTATE_MELEE -> {
+      MacroState.ROTATE_TO_SURFSTRIDER_MELEE -> {
+        targetStrider = findNearestStrider() ?: return
+        if (targetStrider == null) {
+          macroState = MacroState.CASTING
+          return
+        }
+        assert(targetStrider != null)
+        rotateTo(targetStrider!!, duration = 150L)
+        clock.schedule(Random.nextInt(200,300))
         macroState = MacroState.MELEE_ATTACK
       }
 
       MacroState.MELEE_ATTACK -> {
-        macroState = MacroState.RESET
+        MouseUtils.leftClick()
+        clock.schedule(Random.nextInt(100, 200))
+        if (!targetStrider?.isAlive!! ?: false){
+          targetStrider = null
+          macroState = MacroState.RESETTING
+          clock.schedule(Random.nextInt(100, 200))
+        }
       }
 
       MacroState.RESET -> {
