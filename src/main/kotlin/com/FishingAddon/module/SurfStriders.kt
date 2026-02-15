@@ -2,7 +2,6 @@ package com.FishingAddon.module
 
 import com.FishingAddon.module.Main.detectFishbite
 import com.FishingAddon.module.Main.swapToFishingRod
-import com.FishingAddon.module.SurfStriders.targetStrider
 import org.cobalt.api.module.Module
 import org.cobalt.api.module.setting.impl.ModeSetting
 import org.cobalt.api.module.setting.impl.RangeSetting
@@ -23,7 +22,7 @@ import net.minecraft.util.Mth
 import kotlin.math.atan2
 import kotlin.math.sqrt
 
-object SurfStriders : Module("SurfStriders Settings"){
+object SurfStriders : Module("SurfStriders Settings") {
   private val castDelay by RangeSetting(
     name = "Cast Delay",
     description = "Delay range before casting (in ms)",
@@ -49,7 +48,7 @@ object SurfStriders : Module("SurfStriders Settings"){
   )
 
   private val killStriderAt by SliderSetting(
-    name ="read description im lazy",
+    name = "read description im lazy",
     description = "The number of striders at which it will start killing",
     defaultValue = 5.0,
     min = 1.0,
@@ -73,19 +72,23 @@ object SurfStriders : Module("SurfStriders Settings"){
   private enum class MacroState {
     IDLE,
     SWAP_TO_ROD,
+
     // fishing (im not fucking ai)
     CASTING,
     WAITING,
     REELING,
-    // killing with flay/whip , done
     POST_REEL_DECIDE,
+
+    // killing with flay/whip , done
     ROTATE_FLAY,
     SOUL_SWAP,
     SOUL_THROW,
     AXE_SWAP,
+
     // killing with foraging axe melee , done hopefully
     ROTATE_TO_SURFSTRIDER_MELEE,
     MELEE_ATTACK,
+
     // resetting
     RESET,
     RESETTING,
@@ -99,7 +102,16 @@ object SurfStriders : Module("SurfStriders Settings"){
     macroState = MacroState.IDLE
     targetStrider = null
   }
-
+  private fun swapToAxe(){
+    val slot = InventoryUtils.findItemInHotbar("figstone")
+    if (slot != -1) {
+      InventoryUtils.holdHotbarSlot(slot)
+      clock.schedule(Random.nextInt(100, 200))
+      macroState = MacroState.RESET
+    } else {
+      macroState = MacroState.RESET
+    }
+  }
   private fun countStriders(): Int {
     val entities = mc.level?.entitiesForRendering() ?: return 0
     return entities.count { it is Strider && it.position().distanceTo(mc.player?.position() ?: Vec3.ZERO) <= 10.0 }
@@ -117,14 +129,14 @@ object SurfStriders : Module("SurfStriders Settings"){
     return countStriders() >= killStriderAt.toInt()
   }
 
-  private fun rotateTo(yaw: Float, pitch: Float, duration: Long = 150L) {
+  private fun rotateTo(yaw: Float, pitch: Float, duration: Long = 300L) {
     RotationExecutor.rotateTo(
       Rotation(yaw, pitch),
       TimedEaseStrategy(EasingType.LINEAR, EasingType.LINEAR, duration)
     )
   }
 
-  private fun rotateTo(target: Strider, duration: Long = 150L) {
+  private fun rotateTo(target: Strider, duration: Long = 300L) {
     val player = mc.player ?: return
 
     val dx = target.x - player.x
@@ -196,6 +208,8 @@ object SurfStriders : Module("SurfStriders Settings"){
           targetStrider = findNearestStrider()
           macroState = MacroState.ROTATE_FLAY
           clock.schedule(Random.nextInt(100, 200))
+        } else if (shouldKillStriders() && killingMode == 0) {
+          macroState = MacroState.ROTATE_TO_SURFSTRIDER_MELEE
         } else {
           macroState = MacroState.CASTING
           clock.schedule(Random.nextInt(100, 200))
@@ -250,15 +264,16 @@ object SurfStriders : Module("SurfStriders Settings"){
           return
         }
         assert(targetStrider != null)
+        swapToAxe()
         rotateTo(targetStrider!!, duration = 150L)
-        clock.schedule(Random.nextInt(200,300))
+        clock.schedule(Random.nextInt(200, 300))
         macroState = MacroState.MELEE_ATTACK
       }
 
       MacroState.MELEE_ATTACK -> {
         MouseUtils.leftClick()
         clock.schedule(Random.nextInt(100, 200))
-        if (!targetStrider?.isAlive!! ?: false){
+        if (!targetStrider?.isAlive!!) {
           targetStrider = null
           macroState = MacroState.RESETTING
           clock.schedule(Random.nextInt(100, 200))
