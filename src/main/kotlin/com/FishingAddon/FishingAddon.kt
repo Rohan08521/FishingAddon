@@ -6,6 +6,7 @@ import org.cobalt.api.module.Module
 import com.FishingAddon.module.Main
 import com.FishingAddon.module.Normal
 import com.FishingAddon.module.HotspotFishing
+import com.FishingAddon.module.QOL
 import com.FishingAddon.module.SurfStriders
 import com.FishingAddon.module.WormFishing
 
@@ -17,7 +18,8 @@ object FishingAddon : Addon() {
       Normal,
       SurfStriders,
       WormFishing,
-      HotspotFishing
+      HotspotFishing,
+      QOL
     ).forEach(EventBus::register)
     println("FishingAddon loaded!")
   }
@@ -27,6 +29,6 @@ object FishingAddon : Addon() {
   }
 
   override fun getModules(): List<Module> {
-    return listOf(Main, Normal, SurfStriders, WormFishing, HotspotFishing)
+    return listOf(Main, Normal, SurfStriders, WormFishing, HotspotFishing, QOL)
   }
 }

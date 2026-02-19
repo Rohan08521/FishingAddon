@@ -7,6 +7,7 @@ import org.cobalt.api.module.setting.impl.RangeSetting
 import org.cobalt.api.module.setting.impl.SliderSetting
 import org.cobalt.api.util.MouseUtils
 import org.cobalt.api.util.ReflectionUtils
+import org.cobalt.api.util.ChatUtils
 import com.FishingAddon.util.helper.Clock
 import kotlin.random.Random
 import net.minecraft.client.Minecraft
@@ -42,6 +43,11 @@ object Normal : Module(
   private val clock = Clock()
   private var waitingStartTime = 0L
   private val mc = Minecraft.getInstance()
+  val bobber = mc.player?.fishing
+  var isBobbing = bobber?.let {
+    val currentState = ReflectionUtils.getField<Any>(it, "currentState") as? Enum<*>
+    currentState?.ordinal == 2
+  }
 
   private enum class MacroState {
     IDLE,
@@ -53,7 +59,17 @@ object Normal : Module(
   }
 
   internal fun start() {
-    macroState = MacroState.SWAP_TO_ROD
+     isBobbing = bobber?.let {
+      val currentState = ReflectionUtils.getField<Any>(it, "currentState") as? Enum<*>
+      currentState?.ordinal == 2}
+
+    if (bobber != null) {
+      macroState = MacroState.WAITING
+      ChatUtils.sendDebug("Resuming macro in WAITING state")
+    } else {
+      macroState = MacroState.SWAP_TO_ROD
+      ChatUtils.sendDebug("Starting macro in SWAP_TO_ROD state")
+    }
   }
 
   internal fun resetStates() {
@@ -65,7 +81,9 @@ object Normal : Module(
 
     //check: ensure player world and gameMode exist
     if (mc.player == null || mc.level == null || mc.gameMode == null) return
-
+    isBobbing = bobber?.let {
+      val currentState = ReflectionUtils.getField<Any>(it, "currentState") as? Enum<*>
+      currentState?.ordinal == 2}
     when (macroState) {
       MacroState.SWAP_TO_ROD -> {
         swapToFishingRod()
@@ -90,7 +108,6 @@ object Normal : Module(
             val currentState = ReflectionUtils.getField<Any>(it, "currentState") as? Enum<*>
             currentState?.ordinal == 2
           } ?: false
-
           if (!isBobbing && bobber != null && System.currentTimeMillis() - waitingStartTime > bobberTimeout.toLong()) {
             macroState = MacroState.REELING
             clock.schedule(Random.nextInt(100, 200))

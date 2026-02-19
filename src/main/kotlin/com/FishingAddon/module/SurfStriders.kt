@@ -13,11 +13,11 @@ import org.cobalt.api.rotation.EasingType
 import org.cobalt.api.rotation.RotationExecutor
 import org.cobalt.api.rotation.strategy.TimedEaseStrategy
 import org.cobalt.api.util.helper.Rotation
+import org.cobalt.api.event.impl.render.WorldRenderEvent
 import com.FishingAddon.util.helper.Clock
 import kotlin.random.Random
 import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.monster.Strider
-import net.minecraft.world.phys.Vec3
 import net.minecraft.util.Mth
 import kotlin.math.atan2
 import kotlin.math.sqrt
@@ -112,30 +112,31 @@ object SurfStriders : Module("SurfStriders Settings") {
     }
   }
   private fun countStriders(): Int {
-    val entities = mc.level?.entitiesForRendering() ?: return 0
-    return entities.count { it is Strider && it.position().distanceTo(mc.player?.position() ?: Vec3.ZERO) <= 10.0 }
+    val player = mc.player ?: return 0
+    val world = mc.level ?: return 0
+    return world.entitiesForRendering()
+      .filterIsInstance<Strider>()
+      .count { it.isAlive() && it.distanceTo(player) <= 10.0 }
   }
 
   private fun findNearestStrider(): Strider? {
-    val entities = mc.level?.entitiesForRendering() ?: return null
-    return entities
+    val player = mc.player ?: return null
+    val world = mc.level ?: return null
+    return world.entitiesForRendering()
       .filterIsInstance<Strider>()
-      .filter { it.position().distanceTo(mc.player?.position() ?: Vec3.ZERO) <= 10.0 }
-      .minByOrNull { it.position().distanceTo(mc.player?.position() ?: Vec3.ZERO) }
+      .filter { it.distanceTo(player) <= 10.0 }
+      .minByOrNull { it.distanceTo(player) }
   }
 
-  private fun shouldKillStriders(): Boolean {
-    return countStriders() >= killStriderAt.toInt()
-  }
 
-  private fun rotateTo(yaw: Float, pitch: Float, duration: Long = 300L) {
+  private fun rotateTo(yaw: Float, pitch: Float, duration: Long = 150L) {
     RotationExecutor.rotateTo(
       Rotation(yaw, pitch),
       TimedEaseStrategy(EasingType.LINEAR, EasingType.LINEAR, duration)
     )
   }
 
-  private fun rotateTo(target: Strider, duration: Long = 300L) {
+  private fun rotateTo(target: Strider) {
     val player = mc.player ?: return
 
     val dx = target.x - player.x
@@ -151,7 +152,7 @@ object SurfStriders : Module("SurfStriders Settings") {
       (-Math.toDegrees(atan2(dy, dist))).toFloat()
     )
 
-    rotateTo(yaw, pitch, duration)
+    rotateTo(yaw, pitch)
   }
 
   internal fun onTick() {
@@ -199,17 +200,26 @@ object SurfStriders : Module("SurfStriders Settings") {
       }
 
       MacroState.POST_REEL_DECIDE -> {
-        if (shouldKillStriders() && killingMode == 1) {
+        if (countStriders() >= killStriderAt.toInt()) {
+          // save current rotation before killing
           mc.player?.let {
             originalYaw = it.yRot
             originalPitch = it.xRot
           }
-          targetStrider = findNearestStrider()
-          macroState = MacroState.ROTATE_FLAY
-          clock.schedule(Random.nextInt(100, 200))
-        } else if (shouldKillStriders() && killingMode == 0) {
-          macroState = MacroState.ROTATE_TO_SURFSTRIDER_MELEE
+
+          if (killingMode == 1) {
+            // Flaming flay/Soul whip mode
+            targetStrider = findNearestStrider()
+            macroState = MacroState.ROTATE_FLAY
+            clock.schedule(Random.nextInt(100, 200))
+          } else if (killingMode == 0) {
+            // Foraging/Hunting axe melee mode
+            targetStrider = findNearestStrider()
+            macroState = MacroState.ROTATE_TO_SURFSTRIDER_MELEE
+            clock.schedule(Random.nextInt(100, 200))
+          }
         } else {
+          // Not enough striders, continue fishing
           macroState = MacroState.CASTING
           clock.schedule(Random.nextInt(100, 200))
         }
@@ -217,7 +227,7 @@ object SurfStriders : Module("SurfStriders Settings") {
 
       MacroState.ROTATE_FLAY -> {
         targetStrider?.let { strider ->
-          rotateTo(strider, duration = 150L)
+          rotateTo(strider)
           clock.schedule(Random.nextInt(100, 200))
           macroState = MacroState.SOUL_SWAP
         } ?: run {
@@ -257,30 +267,37 @@ object SurfStriders : Module("SurfStriders Settings") {
       }
 
       MacroState.ROTATE_TO_SURFSTRIDER_MELEE -> {
-        targetStrider = findNearestStrider() ?: return
         if (targetStrider == null) {
-          macroState = MacroState.CASTING
-          return
+          targetStrider = findNearestStrider()
         }
-        assert(targetStrider != null)
-        swapToAxe()
-        rotateTo(targetStrider!!, duration = 150L)
-        clock.schedule(Random.nextInt(200, 300))
-        macroState = MacroState.MELEE_ATTACK
+
+        targetStrider?.let { strider ->
+          swapToAxe()
+          rotateTo(strider)
+          clock.schedule(Random.nextInt(200, 300))
+          macroState = MacroState.MELEE_ATTACK
+        } ?: run {
+          // No strider found, go back to fishing
+          macroState = MacroState.RESET
+          clock.schedule(Random.nextInt(100, 200))
+        }
       }
 
       MacroState.MELEE_ATTACK -> {
-        MouseUtils.leftClick()
-        clock.schedule(Random.nextInt(100, 200))
-        if (!targetStrider?.isAlive!!) {
-          targetStrider = null
-          macroState = MacroState.RESETTING
+        if (targetStrider?.isAlive == true) {
+          MouseUtils.leftClick()
           clock.schedule(Random.nextInt(100, 200))
-        } else MacroState.MELEE_ATTACK
+          // Stay in MELEE_ATTACK state to keep attacking
+        } else {
+          // Strider is dead, reset and go back to fishing
+          targetStrider = null
+          macroState = MacroState.RESET
+          clock.schedule(Random.nextInt(100, 200))
+        }
       }
 
       MacroState.RESET -> {
-        rotateTo(originalYaw, originalPitch, duration = 150L)
+        rotateTo(originalYaw, originalPitch)
         clock.schedule(Random.nextInt(100, 200))
         targetStrider = null
         macroState = MacroState.CASTING

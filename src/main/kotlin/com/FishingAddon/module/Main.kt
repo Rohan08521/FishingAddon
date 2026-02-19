@@ -1,10 +1,13 @@
 package com.FishingAddon.module
 
+import java.awt.Color
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.world.phys.AABB
 import org.cobalt.api.event.annotation.SubscribeEvent
 import org.cobalt.api.event.impl.client.TickEvent
+import org.cobalt.api.event.impl.render.WorldRenderEvent
 import org.cobalt.api.module.Module
 import org.cobalt.api.module.setting.impl.KeyBindSetting
 import org.cobalt.api.util.ChatUtils
@@ -13,6 +16,7 @@ import org.cobalt.api.util.helper.KeyBind
 import org.lwjgl.glfw.GLFW
 import org.cobalt.api.module.setting.impl.ModeSetting
 import org.cobalt.api.util.InventoryUtils
+import org.cobalt.api.util.render.Render3D
 
 object Main : Module(
   name = "Main tab",
@@ -32,10 +36,23 @@ object Main : Module(
   private var isToggled = false
   private var wasKeyPressed = false
   private val mc = Minecraft.getInstance()
+  // thanks claude for rendering the box for me <3
+  private var savedBlockX = 0
+  private var savedBlockY = 0
+  private var savedBlockZ = 0
 
   fun start() {
     isToggled = true
     MouseUtils.ungrabMouse()
+
+
+    val player = mc.player
+    if (player != null) {
+      val playerPos = player.position()
+      savedBlockX = kotlin.math.floor(playerPos.x).toInt()
+      savedBlockY = kotlin.math.floor(playerPos.y - 1).toInt()
+      savedBlockZ = kotlin.math.floor(playerPos.z).toInt()
+    }
 
     when (mode) {
       0 -> Normal.start()
@@ -86,6 +103,19 @@ object Main : Module(
       1 -> SurfStriders.onTick()
     }
   }
+
+  @SubscribeEvent
+  fun onWorldRender(event: WorldRenderEvent.Start) {
+    if (!isToggled) return
+
+    // thanks claude for rendering the box for me <3
+    val blockBox = AABB(
+      savedBlockX.toDouble(), savedBlockY.toDouble(), savedBlockZ.toDouble(),
+      (savedBlockX + 1).toDouble(), (savedBlockY + 1).toDouble(), (savedBlockZ + 1).toDouble()
+    )
+
+    Render3D.drawBox(event.context, blockBox, Color(0, 150, 255), esp = true)
+  }
   internal fun swapToFishingRod() {
     val slot = InventoryUtils.findItemInHotbar("rod")
 
@@ -119,6 +149,4 @@ object Main : Module(
     }
     return fishBiteStands > 0
   }
-
 }
-

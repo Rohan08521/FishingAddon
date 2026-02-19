@@ -8,7 +8,7 @@ object KeyBindingUtils {
   private val mc = Minecraft.getInstance()
 
   fun setKeyBindState(key: KeyMapping, pressed: Boolean) {
-    key.setDown(pressed)
+    key.isDown = pressed
   }
 
   fun releaseAllExcept(vararg except: KeyMapping) {
@@ -25,7 +25,7 @@ object KeyBindingUtils {
 
     for (key in keys) {
       if (key !in except) {
-        key.setDown(false)
+        key.isDown = false
       }
     }
   }
