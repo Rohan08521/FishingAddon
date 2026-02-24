@@ -55,14 +55,9 @@ object Normal : Module(
 
   internal fun start() {
      isBobbing = bobber?.let { it.isInWater || it.isInLava } ?: false
-
-    if (bobber != null) {
-      macroState = MacroState.WAITING
-
-    } else {
+    if (!isBobbing){
       macroState = MacroState.SWAP_TO_ROD
-
-    }
+    } else macroState = MacroState.WAITING
   }
 
   internal fun resetStates() {
