@@ -65,10 +65,10 @@ object Normal : Module(
 
     if (bobber != null) {
       macroState = MacroState.WAITING
-      ChatUtils.sendDebug("Resuming macro in WAITING state")
+
     } else {
       macroState = MacroState.SWAP_TO_ROD
-      ChatUtils.sendDebug("Starting macro in SWAP_TO_ROD state")
+
     }
   }
 

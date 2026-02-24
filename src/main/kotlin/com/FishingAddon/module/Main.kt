@@ -1,8 +1,11 @@
 package com.FishingAddon.module
 
+import org.cobalt.api.util.ui.NVGRenderer
 import java.awt.Color
+import kotlin.math.floor
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
+import net.minecraft.util.ARGB.color
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.AABB
 import org.cobalt.api.event.annotation.SubscribeEvent
@@ -16,7 +19,9 @@ import org.cobalt.api.util.helper.KeyBind
 import org.lwjgl.glfw.GLFW
 import org.cobalt.api.module.setting.impl.ModeSetting
 import org.cobalt.api.util.InventoryUtils
+import org.cobalt.api.event.impl.render.NvgEvent
 import org.cobalt.api.util.render.Render3D
+import org.cobalt.api.event.Event
 
 object Main : Module(
   name = "Main tab",
@@ -49,9 +54,9 @@ object Main : Module(
     val player = mc.player
     if (player != null) {
       val playerPos = player.position()
-      savedBlockX = kotlin.math.floor(playerPos.x).toInt()
-      savedBlockY = kotlin.math.floor(playerPos.y - 1).toInt()
-      savedBlockZ = kotlin.math.floor(playerPos.z).toInt()
+      savedBlockX = floor(playerPos.x).toInt()
+      savedBlockY = floor(playerPos.y - 1).toInt()
+      savedBlockZ = floor(playerPos.z).toInt()
     }
 
     when (mode) {
@@ -116,6 +121,13 @@ object Main : Module(
 
     Render3D.drawBox(event.context, blockBox, Color(0, 150, 255), esp = true)
   }
+  @SubscribeEvent
+  fun onScreenRender(event: NvgEvent) {
+    if (!isToggled) return
+
+
+  }
+
   internal fun swapToFishingRod() {
     val slot = InventoryUtils.findItemInHotbar("rod")
 

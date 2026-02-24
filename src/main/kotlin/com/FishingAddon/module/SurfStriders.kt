@@ -22,6 +22,7 @@ import net.minecraft.world.phys.Vec3
 import net.minecraft.util.Mth
 import kotlin.math.atan2
 import kotlin.math.sqrt
+import org.cobalt.api.util.ChatUtils
 
 object SurfStriders : Module("SurfStriders Settings"){
   private val castDelay by RangeSetting(
@@ -188,28 +189,29 @@ object SurfStriders : Module("SurfStriders Settings"){
       }
 
       MacroState.POST_REEL_DECIDE -> {
-        if (shouldKillStriders() && killingMode == 1) {
-          mc.player?.let {
-            originalYaw = it.yRot
-            originalPitch = it.xRot
-          }
-          targetStrider = findNearestStrider()
+        mc.player?.let {
+          originalYaw = it.yRot
+          originalPitch = it.xRot
+        }
+        targetStrider = findNearestStrider()
+        if (shouldKillStriders() && killingMode == 0) {
+          macroState = MacroState.ROTATE_TO_SURFSTRIDER_MELEE
+          clock.schedule(Random.nextInt(100, 200))
+        } else if (shouldKillStriders() && killingMode == 1) {
           macroState = MacroState.ROTATE_FLAY
           clock.schedule(Random.nextInt(100, 200))
-        } else {
-          macroState = MacroState.CASTING
+        } else if (!shouldKillStriders()){
+          macroState = MacroState.RESETTING
           clock.schedule(Random.nextInt(100, 200))
         }
       }
 
       MacroState.ROTATE_FLAY -> {
-        targetStrider?.let { strider ->
-          rotateTo(strider, duration = 150L)
-          clock.schedule(Random.nextInt(100, 200))
-          macroState = MacroState.SOUL_SWAP
-        } ?: run {
-          macroState = MacroState.CASTING
-        }
+        //targetStrider?.let { strider ->
+        //  rotateTo(strider, duration = 150L)
+        // clock.schedule(Random.nextInt(100, 200))
+        //}
+        macroState = MacroState.SOUL_SWAP
       }
 
       MacroState.SOUL_SWAP -> {
@@ -222,6 +224,7 @@ object SurfStriders : Module("SurfStriders Settings"){
           clock.schedule(Random.nextInt(100, 200))
           macroState = MacroState.SOUL_THROW
         } else {
+          ChatUtils.equals("Couldn't find Soul Whip or Flaming Flay for Strider killing, skipping to axe swap")
           macroState = MacroState.AXE_SWAP
         }
       }
@@ -250,7 +253,7 @@ object SurfStriders : Module("SurfStriders Settings"){
           return
         }
         assert(targetStrider != null)
-        rotateTo(targetStrider!!, duration = 150L)
+        rotateTo(targetStrider!!, duration = 300L)
         clock.schedule(Random.nextInt(200,300))
         macroState = MacroState.MELEE_ATTACK
       }
@@ -258,10 +261,14 @@ object SurfStriders : Module("SurfStriders Settings"){
       MacroState.MELEE_ATTACK -> {
         MouseUtils.leftClick()
         clock.schedule(Random.nextInt(100, 200))
-        if (!targetStrider?.isAlive!! ?: false){
+        if (!targetStrider?.isAlive!!){
           targetStrider = null
           macroState = MacroState.RESETTING
           clock.schedule(Random.nextInt(100, 200))
+        } else if (shouldKillStriders()) {
+          macroState = MacroState.MELEE_ATTACK
+        } else {
+          macroState = MacroState.RESETTING
         }
       }
 
