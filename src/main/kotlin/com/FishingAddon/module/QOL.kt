@@ -23,6 +23,12 @@ object QOL : Module(
         defaultValue = false
     )
 
+    val DisableInactivityFpsLimit by CheckboxSetting(
+        name = "Disable Inactivity FPS Limit",
+        description = "Prevents Minecraft from lowering FPS while inactive/unfocused",
+        defaultValue = false
+    )
+
     fun sendChatMessage(message: String) {
         var message = message
         if (Minecraft.getInstance().player == null) {
