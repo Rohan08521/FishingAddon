@@ -260,9 +260,8 @@ object SurfStriders : Module("SurfStriders Settings") {
                     return
                 }
                 assert(targetStrider != null)
-                rotateTo(targetStrider!!, duration = 300L)
                 clock.schedule(Random.nextInt(200, 300))
-                macroState = MacroState.MELEE_ATTACK
+                macroState = MacroState.AXE_SWAP_MELEE
             }
 
             MacroState.AXE_SWAP_MELEE -> {
