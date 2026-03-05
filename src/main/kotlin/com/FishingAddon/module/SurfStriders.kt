@@ -254,12 +254,11 @@ object SurfStriders : Module("SurfStriders Settings") {
             }
 
             MacroState.ROTATE_TO_SURFSTRIDER_MELEE -> {
-                targetStrider = findNearestStrider() ?: return
+                targetStrider = findNearestStrider()
                 if (targetStrider == null) {
                     macroState = MacroState.CASTING
                     return
                 }
-                assert(targetStrider != null)
                 clock.schedule(Random.nextInt(200, 300))
                 macroState = MacroState.AXE_SWAP_MELEE
             }
@@ -278,11 +277,19 @@ object SurfStriders : Module("SurfStriders Settings") {
             MacroState.MELEE_ATTACK -> {
                 MouseUtils.leftClick()
                 clock.schedule(Random.nextInt(100, 200))
-                if (!targetStrider?.isAlive!!) {
-                    targetStrider = null
-                    macroState = MacroState.RESETTING
-                    clock.schedule(Random.nextInt(100, 200))
-                } else if (shouldKillStriders()) {
+                val currentTarget = targetStrider
+                if (currentTarget == null || !currentTarget.isAlive) {
+                    targetStrider = findNearestStrider()
+                    if (shouldKillStriders() && targetStrider != null) {
+                        macroState = MacroState.ROTATE_TO_SURFSTRIDER_MELEE
+                        clock.schedule(Random.nextInt(100, 200))
+                    } else {
+                        targetStrider = null
+                        macroState = MacroState.RESETTING
+                        clock.schedule(Random.nextInt(100, 200))
+                    }
+                } else if (shouldKillStriders() && findNearestStrider() != null) {
+                    rotateTo(currentTarget, duration = 120L)
                     macroState = MacroState.MELEE_ATTACK
                 } else {
                     macroState = MacroState.RESETTING
