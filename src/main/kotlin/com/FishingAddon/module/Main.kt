@@ -63,6 +63,7 @@ object Main : Module(
         when (mode) {
             0 -> Normal.start()
             1 -> SurfStriders.start()
+            2 -> WormFishing.start()
         }
     }
 
@@ -73,6 +74,7 @@ object Main : Module(
         when (mode) {
             0 -> Normal.resetStates()
             1 -> SurfStriders.resetStates()
+            2 -> WormFishing.resetStates()
         }
     }
 
@@ -107,6 +109,7 @@ object Main : Module(
         when (mode) {
             0 -> Normal.onTick()
             1 -> SurfStriders.onTick()
+            2 -> WormFishing.onTick()
         }
     }
 
