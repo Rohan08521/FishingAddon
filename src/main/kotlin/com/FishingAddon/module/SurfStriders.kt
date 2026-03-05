@@ -293,11 +293,11 @@ object SurfStriders : Module("SurfStriders Settings") {
                 rotateTo(originalYaw, originalPitch, duration = 300L)
                 clock.schedule(Random.nextInt(100, 200))
                 targetStrider = null
-                macroState = MacroState.CASTING
+                macroState = MacroState.SWAP_TO_ROD
             }
 
             MacroState.RESETTING -> {
-                macroState = MacroState.CASTING
+                macroState = MacroState.SWAP_TO_ROD
             }
 
             MacroState.IDLE -> {
