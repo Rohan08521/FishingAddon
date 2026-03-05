@@ -8,6 +8,7 @@
   },
   "mixins": [
     "MinecraftFishingbobber",
-    "MixinTitleScreen"
+    "MixinTitleScreen",
+    "InactivityFpsLimiterMixin"
   ]
 }
