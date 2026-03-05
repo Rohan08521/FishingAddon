@@ -47,6 +47,7 @@ object Main : Module(
     private var isMouseUngrabbed = false
     private var wasKeyPressed = false
     private var wasUngrabMouseKeyPressed = false
+    private var isPausedByScreen = false
     private val mc = Minecraft.getInstance()
 
     // thanks claude for rendering the box for me <3
@@ -123,6 +124,19 @@ object Main : Module(
     fun onTick(event: TickEvent) {
         if (!isToggled) {
             return
+        }
+
+        if (mc.screen != null) {
+            if (!isPausedByScreen) {
+                isPausedByScreen = true
+                ChatUtils.sendMessage("Fishing Macro is now §eIdle§r while a menu is open")
+            }
+            return
+        }
+
+        if (isPausedByScreen) {
+            isPausedByScreen = false
+            ChatUtils.sendMessage("Fishing Macro has §aResumed§r")
         }
 
         when (mode) {
