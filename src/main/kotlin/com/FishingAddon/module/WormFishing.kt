@@ -65,7 +65,7 @@ object WormFishing : Module("WormFishing Settings") {
         description = "Delay before recasting when bobber disappears (in ms)",
         defaultValue = Pair(100.0, 200.0),
         min = 10.0,
-        max = 1000.0
+        max = 10000.0
     )
 
     private val failedBobbingRecastDelay by RangeSetting(
@@ -73,7 +73,7 @@ object WormFishing : Module("WormFishing Settings") {
         description = "Delay before reeling/recasting when bobber fails to bob (in ms)",
         defaultValue = Pair(100.0, 200.0),
         min = 10.0,
-        max = 1000.0
+        max = 10000.0
     )
 
     private val killSilverfishAt by RangeSetting(
