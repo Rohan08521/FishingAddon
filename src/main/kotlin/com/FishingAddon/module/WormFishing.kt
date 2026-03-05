@@ -23,11 +23,17 @@ import org.cobalt.api.util.MouseUtils
 import org.cobalt.api.util.render.Render3D
 
 object WormFishing : Module("WormFishing Settings") {
+    private val highlightWormfishSpot by CheckboxSetting(
+        name = "Highlight Wormfish Spots",
+        description = "Highlights potential wormfish fishing spots in the Crystal Hollows.",
+        defaultValue = false
+    )
+
     private val castDelay by RangeSetting(
         name = "Cast Delay",
         description = "Delay range before casting (in ms)",
         defaultValue = Pair(100.0, 200.0),
-        min = 0.0,
+        min = 5.0,
         max = 1000.0
     )
 
@@ -35,12 +41,12 @@ object WormFishing : Module("WormFishing Settings") {
         name = "Reel In Delay",
         description = "Delay range after reeling in (in ms)",
         defaultValue = Pair(200.0, 400.0),
-        min = 0.0,
+        min = 5.0,
         max = 1000.0
     )
 
     private val bobberTimeout by SliderSetting(
-        name = "Bobber Timeout",
+        name = "Recast Bobber",
         description = "Time to wait for bobber to enter water before recasting (in ms)",
         defaultValue = 20000.0,
         min = 5000.0,
@@ -48,24 +54,18 @@ object WormFishing : Module("WormFishing Settings") {
     )
 
     private val killSilverfishAt by RangeSetting(
-        name = "Kill Count Range",
-        description = "The range of silverfish count to trigger killing",
+        name = "Worm Cap Range",
+        description = "The range of Flaming Worms count to trigger killing",
         defaultValue = Pair(18.0, 20.0),
         min = 1.0,
         max = 20.0
-    )
-
-    private val highlightWormfishSpot by CheckboxSetting(
-        name = "Highlight Wormfish Spots",
-        description = "Highlights potential wormfish fishing spots in the Crystal Hollows.",
-        defaultValue = false
     )
 
     private val hyperionSwapDelay by RangeSetting(
         name = "Hyperion Swap Delay",
         description = "Delay between swapping to Hyperion and using it (in ms)",
         defaultValue = Pair(150.0, 300.0),
-        min = 0.0,
+        min = 10.0,
         max = 1000.0
     )
 
@@ -73,7 +73,7 @@ object WormFishing : Module("WormFishing Settings") {
         name = "State Transition Delay",
         description = "Small delays between logic steps (in ms)",
         defaultValue = Pair(100.0, 200.0),
-        min = 0.0,
+        min = 10.0,
         max = 500.0
     )
 
@@ -245,7 +245,7 @@ object WormFishing : Module("WormFishing Settings") {
         val player = mc.player ?: return
         val level = mc.level ?: return
         val playerPos = player.blockPosition()
-        val lavaPos = detectWormfishSpot(level, playerPos, 10) ?: return
+        val lavaPos = detectWormfishSpot(level, playerPos, 128) ?: return
 
         val blockBox = AABB.ofSize(
             Vec3.atCenterOf(lavaPos),
@@ -254,6 +254,6 @@ object WormFishing : Module("WormFishing Settings") {
             1.0
         )
 
-        Render3D.drawBox(event.context, blockBox, Color(0, 150, 255), esp = true)
+        Render3D.drawBox(event.context, blockBox, Color(191, 70, 63), esp = true)
     }
 }

@@ -29,12 +29,12 @@ object Main : Module(
     var keyBind by KeyBindSetting(
         name = "Macro Keybind",
         description = "Keybind to toggle the macro",
-        defaultValue = KeyBind(GLFW.GLFW_KEY_J)
+        defaultValue = KeyBind(GLFW.GLFW_KEY_Y)
     )
     var ungrabMouseKeyBind by KeyBindSetting(
         name = "Ungrab Mouse Keybind",
         description = "Keybind to toggle mouse grab",
-        defaultValue = KeyBind(GLFW.GLFW_KEY_U)
+        defaultValue = KeyBind(GLFW.GLFW_KEY_O)
     )
     val mode by ModeSetting(
         name = "FishingMode",
