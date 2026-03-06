@@ -17,6 +17,7 @@ import org.cobalt.api.event.impl.render.WorldRenderEvent
 import org.cobalt.api.module.Module
 import org.cobalt.api.module.setting.impl.CheckboxSetting
 import org.cobalt.api.module.setting.impl.RangeSetting
+import org.cobalt.api.module.setting.impl.SliderSetting
 import org.cobalt.api.util.InventoryUtils
 import org.cobalt.api.util.MouseUtils
 import org.cobalt.api.util.render.Render3D
@@ -26,6 +27,22 @@ object WormFishing : Module("WormFishing Settings") {
         name = "Highlight Wormfish Spots",
         description = "Highlights potential wormfish fishing spots in the Crystal Hollows.",
         defaultValue = false
+    )
+
+    private val lavaEspRadius by SliderSetting(
+        name = "Lava ESP Radius",
+        description = "Horizontal scan radius for lava ESP (in blocks).",
+        defaultValue = 30.0,
+        min = 8.0,
+        max = 64.0
+    )
+
+    private val lavaEspRefreshRate by SliderSetting(
+        name = "Lava ESP Refresh",
+        description = "How often lava ESP rescans nearby blocks (in ms).",
+        defaultValue = 1000.0,
+        min = 250.0,
+        max = 5000.0
     )
 
     private val castDelay by RangeSetting(
@@ -98,6 +115,10 @@ object WormFishing : Module("WormFishing Settings") {
     private var waitingStartTime = 0L
     private var currentBobberTimeout = 0L
     private var currentKillThreshold = 20
+    private var cachedLavaBoxes: List<AABB> = emptyList()
+    private var lastLavaScanCenter: BlockPos? = null
+    private var lastLavaScanAt = 0L
+    private var lastLavaScanLevelId = 0
 
     private enum class MacroState {
         IDLE,
@@ -220,30 +241,54 @@ object WormFishing : Module("WormFishing Settings") {
         }
     }
 
-    fun detectWormfishSpot(
+    private fun shouldRefreshLavaScan(center: BlockPos, level: Level): Boolean {
+        val now = System.currentTimeMillis()
+        val refreshInterval = lavaEspRefreshRate.toLong()
+        val previousCenter = lastLavaScanCenter
+        val levelId = System.identityHashCode(level)
+        if (previousCenter == null || lastLavaScanLevelId != levelId) return true
+        if (now - lastLavaScanAt >= refreshInterval) return true
+
+        // Rescan sooner if player moved enough to expose new nearby lava.
+        return previousCenter.distManhattan(center) >= 3
+    }
+
+    fun detectWormfishSpots(
         level: Level,
         center: BlockPos,
         radius: Int,
-    ): BlockPos? {
+    ): List<AABB> {
         val minX = center.x - radius
         val maxX = center.x + radius
         val minZ = center.z - radius
         val maxZ = center.z + radius
+        // Keep scan bounds mapping-safe and aligned with prior Crystal Hollows worm spot logic.
+        val minY = 65
+        val maxY = 320
+        val lavaBoxes = mutableListOf<AABB>()
+        val mutablePos = BlockPos.MutableBlockPos()
 
         for (x in minX..maxX) {
             for (z in minZ..maxZ) {
-                for (y in 65..320) {
-                    val pos = BlockPos(x, y, z)
-                    val blockState = level.getBlockState(pos)
+                for (y in minY..maxY) {
+                    mutablePos.set(x, y, z)
+                    val blockState = level.getBlockState(mutablePos)
 
                     if (blockState.`is`(Blocks.LAVA)) {
-                        return pos
+                        lavaBoxes.add(
+                            AABB.ofSize(
+                                Vec3.atCenterOf(mutablePos),
+                                1.0,
+                                1.0,
+                                1.0
+                            )
+                        )
                     }
                 }
             }
         }
 
-        return null
+        return lavaBoxes
     }
 
     @SubscribeEvent
@@ -253,15 +298,17 @@ object WormFishing : Module("WormFishing Settings") {
         val player = mc.player ?: return
         val level = mc.level ?: return
         val playerPos = player.blockPosition()
-        val lavaPos = detectWormfishSpot(level, playerPos, 30) ?: return
 
-        val blockBox = AABB.ofSize(
-            Vec3.atCenterOf(lavaPos),
-            1.0,
-            1.0,
-            1.0
-        )
+        if (shouldRefreshLavaScan(playerPos, level)) {
+            val radius = lavaEspRadius.toInt()
+            cachedLavaBoxes = detectWormfishSpots(level, playerPos, radius)
+            lastLavaScanCenter = playerPos.immutable()
+            lastLavaScanAt = System.currentTimeMillis()
+            lastLavaScanLevelId = System.identityHashCode(level)
+        }
 
-        Render3D.drawBox(event.context, blockBox, Color(191, 70, 63), esp = true)
+        for (lavaBox in cachedLavaBoxes) {
+            Render3D.drawBox(event.context, lavaBox, Color(191, 70, 63), esp = true)
+        }
     }
 }
