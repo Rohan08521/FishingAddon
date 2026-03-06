@@ -61,6 +61,14 @@ object WormFishing : Module("WormFishing Settings") {
         max = 1000.0
     )
 
+    private val postReelDelay by RangeSetting(
+        name = "Post Reel Delay",
+        description = "Delay range after reeling before deciding next action (in ms)",
+        defaultValue = Pair(120.0, 220.0),
+        min = 5.0,
+        max = 1000.0
+    )
+
     private val bobberTimeout by RangeSetting(
         name = "Recast Bobber Delay",
         description = "Time range to wait for bobber to enter water before recasting (in ms)",
@@ -135,7 +143,8 @@ object WormFishing : Module("WormFishing Settings") {
 
     internal fun start() {
         generateNewThreshold()
-        macroState = MacroState.SWAP_TO_ROD
+        val isBobbing = mc.player?.fishing?.let { it.isInWater || it.isInLava } ?: false
+        macroState = if (isBobbing) MacroState.WAITING else MacroState.SWAP_TO_ROD
     }
 
     internal fun resetStates() {
@@ -173,7 +182,7 @@ object WormFishing : Module("WormFishing Settings") {
                 MouseUtils.rightClick()
                 waitingStartTime = System.currentTimeMillis()
                 currentBobberTimeout = Random.nextInt(bobberTimeout.first.toInt(), bobberTimeout.second.toInt()).toLong()
-                clock.schedule(Random.nextInt(castDelay.first.toInt(), castDelay.second.toInt()))
+                clock.schedule(Random.nextInt(100, 200))
                 macroState = MacroState.WAITING
             }
 
@@ -200,6 +209,7 @@ object WormFishing : Module("WormFishing Settings") {
 
             MacroState.REELING -> {
                 MouseUtils.rightClick()
+                clock.schedule(Random.nextInt(postReelDelay.first.toInt(), postReelDelay.second.toInt()))
                 macroState = MacroState.POST_REEL_DECIDE
             }
 
@@ -207,7 +217,8 @@ object WormFishing : Module("WormFishing Settings") {
                 if (shouldKillSilverfish()) {
                     macroState = MacroState.HYPERION_SWAP
                 } else {
-                    macroState = MacroState.CASTING
+                    clock.schedule(Random.nextInt(castDelay.first.toInt(), castDelay.second.toInt()))
+                    macroState = MacroState.RESETTING
                 }
             }
 
