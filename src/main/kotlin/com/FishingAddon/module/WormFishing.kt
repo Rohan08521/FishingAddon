@@ -4,7 +4,6 @@ import com.FishingAddon.module.Main.detectFishbite
 import com.FishingAddon.module.Main.swapToFishingRod
 import com.FishingAddon.util.helper.Clock
 import java.awt.Color
-import kotlin.math.abs
 import kotlin.random.Random
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -101,8 +100,6 @@ object WormFishing : Module("WormFishing Settings") {
     private var currentKillThreshold = 20
     private val cachedLavaPositions = mutableListOf<BlockPos>()
     private var lastLavaScanTime = 0L
-    private var lastScanCenter: BlockPos? = null
-    private val lavaRescanDistance = 2
 
     private enum class MacroState {
         IDLE,
@@ -271,17 +268,11 @@ object WormFishing : Module("WormFishing Settings") {
         val now = System.currentTimeMillis()
         val scanRadius = wormfishEspRadius.toInt()
         val scanDelayMs = wormfishEspRescanDelay.toLong()
-        val movedEnough = lastScanCenter?.let {
-            abs(it.x - playerPos.x) >= lavaRescanDistance ||
-                abs(it.y - playerPos.y) >= lavaRescanDistance ||
-                abs(it.z - playerPos.z) >= lavaRescanDistance
-        } ?: true
 
-        if (movedEnough || now - lastLavaScanTime >= scanDelayMs) {
+        if (now - lastLavaScanTime >= scanDelayMs) {
             cachedLavaPositions.clear()
             cachedLavaPositions.addAll(detectWormfishSpots(level, playerPos, scanRadius))
             lastLavaScanTime = now
-            lastScanCenter = playerPos
         }
 
         if (cachedLavaPositions.isEmpty()) return
