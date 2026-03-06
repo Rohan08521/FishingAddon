@@ -61,18 +61,10 @@ object WormFishing : Module("WormFishing Settings") {
         max = 1000.0
     )
 
-    private val postReelDelay by RangeSetting(
-        name = "Post Reel Delay",
-        description = "Delay range after reeling before deciding next action (in ms)",
-        defaultValue = Pair(120.0, 220.0),
-        min = 5.0,
-        max = 1000.0
-    )
-
-    private val bobberTimeout by RangeSetting(
+    private val bobberTimeout by SliderSetting(
         name = "Recast Bobber Delay",
-        description = "Time range to wait for bobber to enter water before recasting (in ms)",
-        defaultValue = Pair(20000.0, 25000.0),
+        description = "Time to wait for bobber to enter water before recasting (in ms)",
+        defaultValue = 20000.0,
         min = 5000.0,
         max = 60000.0
     )
@@ -85,20 +77,12 @@ object WormFishing : Module("WormFishing Settings") {
         max = 1500.0
     )
 
-    private val missingBobberRecastDelay by RangeSetting(
-        name = "Missing Bobber Recast Delay",
-        description = "Delay before recasting when bobber disappears (in ms)",
+    private val transitionDelay by RangeSetting(
+        name = "Transition Delay",
+        description = "Shared short delay for recast/reel transitions (in ms)",
         defaultValue = Pair(100.0, 200.0),
         min = 10.0,
-        max = 10000.0
-    )
-
-    private val failedBobbingRecastDelay by RangeSetting(
-        name = "Failed Bobbing Recast Delay",
-        description = "Delay before reeling/recasting when bobber fails to bob (in ms)",
-        defaultValue = Pair(100.0, 200.0),
-        min = 10.0,
-        max = 10000.0
+        max = 1000.0
     )
 
     private val killSilverfishAt by RangeSetting(
@@ -121,7 +105,6 @@ object WormFishing : Module("WormFishing Settings") {
     private val clock = Clock()
     private val mc = Minecraft.getInstance()
     private var waitingStartTime = 0L
-    private var currentBobberTimeout = 0L
     private var currentKillThreshold = 20
     private var cachedLavaBoxes: List<AABB> = emptyList()
     private var lastLavaScanCenter: BlockPos? = null
@@ -181,8 +164,7 @@ object WormFishing : Module("WormFishing Settings") {
             MacroState.CASTING -> {
                 MouseUtils.rightClick()
                 waitingStartTime = System.currentTimeMillis()
-                currentBobberTimeout = Random.nextInt(bobberTimeout.first.toInt(), bobberTimeout.second.toInt()).toLong()
-                clock.schedule(Random.nextInt(100, 200))
+                clock.schedule(Random.nextInt(castDelay.first.toInt(), castDelay.second.toInt()))
                 macroState = MacroState.WAITING
             }
 
@@ -195,29 +177,30 @@ object WormFishing : Module("WormFishing Settings") {
                     val isBobbing = bobber?.let { it.isInWater || it.isInLava } ?: false
 
                     if (bobber == null) {
-                        clock.schedule(Random.nextInt(missingBobberRecastDelay.first.toInt(), missingBobberRecastDelay.second.toInt()))
+                        clock.schedule(Random.nextInt(transitionDelay.first.toInt(), transitionDelay.second.toInt()))
                         macroState = MacroState.CASTING
                         return
                     }
 
-                    if (!isBobbing && System.currentTimeMillis() - waitingStartTime > currentBobberTimeout) {
+                    if (!isBobbing && System.currentTimeMillis() - waitingStartTime > bobberTimeout.toLong()) {
                         macroState = MacroState.REELING
-                        clock.schedule(Random.nextInt(failedBobbingRecastDelay.first.toInt(), failedBobbingRecastDelay.second.toInt()))
+                        clock.schedule(Random.nextInt(transitionDelay.first.toInt(), transitionDelay.second.toInt()))
                     }
                 }
             }
 
             MacroState.REELING -> {
                 MouseUtils.rightClick()
-                clock.schedule(Random.nextInt(postReelDelay.first.toInt(), postReelDelay.second.toInt()))
+                clock.schedule(Random.nextInt(transitionDelay.first.toInt(), transitionDelay.second.toInt()))
                 macroState = MacroState.POST_REEL_DECIDE
             }
 
             MacroState.POST_REEL_DECIDE -> {
                 if (shouldKillSilverfish()) {
+                    clock.schedule(Random.nextInt(transitionDelay.first.toInt(), transitionDelay.second.toInt()))
                     macroState = MacroState.HYPERION_SWAP
                 } else {
-                    clock.schedule(Random.nextInt(castDelay.first.toInt(), castDelay.second.toInt()))
+                    clock.schedule(Random.nextInt(transitionDelay.first.toInt(), transitionDelay.second.toInt()))
                     macroState = MacroState.RESETTING
                 }
             }
@@ -232,7 +215,6 @@ object WormFishing : Module("WormFishing Settings") {
                     macroState = MacroState.RESET
                 }
             }
-
             MacroState.HYPERION_USE -> {
                 MouseUtils.rightClick()
                 macroState = MacroState.RESET
@@ -240,6 +222,7 @@ object WormFishing : Module("WormFishing Settings") {
 
             MacroState.RESET -> {
                 generateNewThreshold()
+                clock.schedule(Random.nextInt(transitionDelay.first.toInt(), transitionDelay.second.toInt()))
                 macroState = MacroState.SWAP_TO_ROD
             }
 
