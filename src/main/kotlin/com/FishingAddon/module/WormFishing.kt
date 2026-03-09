@@ -34,7 +34,7 @@ object WormFishing : Module("WormFishing Settings") {
     )
 
     private val hyperionSwapDelay by RangeSetting(
-        name = "Hyperion Swap Delay",
+        name = "Hyperion Delay",
         description = "Delay between swapping to Hyperion and using it (in ms)",
         defaultValue = Pair(150.0, 300.0),
         min = 0.0,
@@ -42,7 +42,7 @@ object WormFishing : Module("WormFishing Settings") {
     )
 
     private val fishingSwapDelay by RangeSetting(
-        name = "Rod Swap Delay",
+        name = "Rod Hotbar Delay",
         description = "Delay between swapping to Rod",
         defaultValue = Pair(150.0, 300.0),
         min = 0.0,
@@ -50,7 +50,7 @@ object WormFishing : Module("WormFishing Settings") {
     )
 
     private val stateTransitionDelay by RangeSetting(
-        name = "State Transition Delay",
+        name = "Transition Delay",
         description = "Small delays between logic steps (in ms)",
         defaultValue = Pair(100.0, 200.0),
         min = 0.0,
@@ -58,7 +58,7 @@ object WormFishing : Module("WormFishing Settings") {
     )
 
     private val bobberTimeout by SliderSetting(
-        name = "Bobber Timeout",
+        name = "Fishing Rod Failsafe",
         description = "Time to wait for bobber to enter water before recasting (in ms)",
         defaultValue = 20000.0,
         min = 5000.0,
@@ -66,8 +66,8 @@ object WormFishing : Module("WormFishing Settings") {
     )
 
     private val killSilverfishAt by RangeSetting(
-        name = "Kill Count Range",
-        description = "The range of silverfish count to trigger killing",
+        name = "Sea Creature Cap",
+        description = "The range of sea creatures to proceed",
         defaultValue = Pair(18.0, 20.0),
         min = 1.0,
         max = 20.0
@@ -140,38 +140,35 @@ object WormFishing : Module("WormFishing Settings") {
 
             MacroState.WAITING -> {
                 if (detectFishbite()) {
-                    clock.schedule(Random.nextInt(reelInDelay.first.toInt(), reelInDelay.second.toInt()))
                     macroState = MacroState.REELING
                 } else {
                     val bobber = mc.player?.fishing
                     val isBobbing = bobber?.let { it.isInWater || it.isInLava } ?: false
 
                     if (bobber == null) {
-                        clock.schedule(Random.nextInt(100, 200))
                         macroState = MacroState.SWAP_TO_ROD
                         return
                     }
 
                     if (!isBobbing && System.currentTimeMillis() - waitingStartTime > bobberTimeout.toLong()) {
                         macroState = MacroState.REELING
-                        clock.schedule(Random.nextInt(100, 200))
                     }
                 }
             }
 
             MacroState.REELING -> {
+                clock.schedule(Random.nextInt(reelInDelay.first.toInt(), reelInDelay.second.toInt()))
                 MouseUtils.rightClick()
                 macroState = MacroState.POST_REEL_DECIDE
-                clock.schedule(getTransitionDelay())
             }
 
             MacroState.POST_REEL_DECIDE -> {
                 if (shouldKillSilverfish()) {
+                    clock.schedule(getTransitionDelay())
                     macroState = MacroState.HYPERION_SWAP
-                    clock.schedule(getTransitionDelay())
                 } else {
-                    macroState = MacroState.SWAP_TO_ROD
                     clock.schedule(getTransitionDelay())
+                    macroState = MacroState.SWAP_TO_ROD
                 }
             }
 
@@ -188,13 +185,11 @@ object WormFishing : Module("WormFishing Settings") {
 
             MacroState.HYPERION_USE -> {
                 MouseUtils.rightClick()
-                clock.schedule(getTransitionDelay())
                 macroState = MacroState.RESET
             }
 
             MacroState.RESET -> {
                 generateNewThreshold()
-                clock.schedule(getTransitionDelay())
                 macroState = MacroState.SWAP_TO_ROD
             }
 
