@@ -75,7 +75,7 @@ object Visuals : Module("Visuals") {
                 savedBlockX.toDouble(), savedBlockY.toDouble(), savedBlockZ.toDouble(),
                 (savedBlockX + 1).toDouble(), (savedBlockY + 1).toDouble(), (savedBlockZ + 1).toDouble()
             )
-            Render3D.drawBox(event.context, blockBox, Color(0, 150, 255, 100), esp = true)
+            Render3D.drawBox(event.context, blockBox, Color(250, 0, 255, 100), esp = true)
         }
 
         if (!highlightWormfishSpot) {
@@ -108,7 +108,7 @@ object Visuals : Module("Visuals") {
                 1.0,
                 1.0
             )
-            Render3D.drawBox(event.context, blockBox, Color(0, 150, 255), esp = true)
+            Render3D.drawBox(event.context, blockBox, Color(205, 48, 48), esp = true)
         }
     }
 
