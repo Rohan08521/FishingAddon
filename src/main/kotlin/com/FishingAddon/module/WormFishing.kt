@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos
 import net.minecraft.world.entity.monster.Silverfish
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.Vec3
 import org.cobalt.api.module.Module
 import org.cobalt.api.module.setting.impl.RangeSetting
@@ -206,27 +207,58 @@ object WormFishing : Module("WormFishing Settings") {
         center: BlockPos,
         radius: Int,
     ): List<BlockPos> {
-        val minX = center.x - radius
-        val maxX = center.x + radius
-        val minZ = center.z - radius
-        val maxZ = center.z + radius
         val spots = mutableListOf<BlockPos>()
+        val centerX = center.x
+        val centerZ = center.z
+        val radiusSq = radius * radius
         val mutablePos = BlockPos.MutableBlockPos()
+        val topPos = BlockPos.MutableBlockPos()
+        val minChunkX = (centerX - radius) shr 4
+        val maxChunkX = (centerX + radius) shr 4
+        val minChunkZ = (centerZ - radius) shr 4
+        val maxChunkZ = (centerZ + radius) shr 4
+        val minY = 65
+        val maxY = 320
 
-        for (x in minX..maxX) {
-            for (z in minZ..maxZ) {
-                for (y in 65..320) {
-                    mutablePos.set(x, y, z)
-                    val blockState = level.getBlockState(mutablePos)
+        for (chunkX in minChunkX..maxChunkX) {
+            for (chunkZ in minChunkZ..maxChunkZ) {
+                if (!level.hasChunk(chunkX, chunkZ)) continue
 
-                    if (blockState.`is`(Blocks.LAVA)) {
-                        spots.add(mutablePos.immutable())
+                val startX = maxOf(chunkX shl 4, centerX - radius)
+                val endX = minOf((chunkX shl 4) + 15, centerX + radius)
+                val startZ = maxOf(chunkZ shl 4, centerZ - radius)
+                val endZ = minOf((chunkZ shl 4) + 15, centerZ + radius)
+
+                for (x in startX..endX) {
+                    val dx = x - centerX
+                    val dxSq = dx * dx
+
+                    for (z in startZ..endZ) {
+                        val dz = z - centerZ
+                        if (dxSq + dz * dz > radiusSq) continue
+
+                        for (y in maxY downTo minY) {
+                            mutablePos.set(x, y, z)
+                            if (!level.getBlockState(mutablePos).`is`(Blocks.LAVA)) continue
+
+                            topPos.set(x, y + 1, z)
+                            val blockAbove = if (y >= maxY) null else level.getBlockState(topPos)
+                            if (isExposedLavaSurface(blockAbove)) {
+                                spots.add(mutablePos.immutable())
+                                break
+                            }
+                        }
                     }
                 }
             }
         }
 
         return spots
+    }
+
+    private fun isExposedLavaSurface(blockAbove: BlockState?): Boolean {
+        if (blockAbove == null) return true
+        return !blockAbove.`is`(Blocks.LAVA) && !blockAbove.blocksMotion()
     }
 
 }
