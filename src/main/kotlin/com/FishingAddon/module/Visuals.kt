@@ -29,7 +29,7 @@ object Visuals : Module("Visuals") {
     private val wormfishEspRadius by SliderSetting(
         name = "Wormfish ESP Radius",
         description = "Radius (in blocks) to scan for lava blocks to highlight.",
-        defaultValue = 10.0,
+        defaultValue = 128.0,
         min = 1.0,
         max = 128.0
     )
@@ -37,7 +37,7 @@ object Visuals : Module("Visuals") {
     private val wormfishEspRescanDelay by SliderSetting(
         name = "Wormfish ESP Rescan Delay",
         description = "Delay between lava rescans for ESP (in ms).",
-        defaultValue = 500.0,
+        defaultValue = 10000.0,
         min = 0.0,
         max = 10000.0
     )
@@ -46,6 +46,7 @@ object Visuals : Module("Visuals") {
     private var savedBlockX = 0
     private var savedBlockY = 0
     private var savedBlockZ = 0
+    private var hasSavedStartBlock = false
     private val cachedLavaPositions = mutableListOf<BlockPos>()
     private var lastLavaScanTime = 0L
 
@@ -55,17 +56,21 @@ object Visuals : Module("Visuals") {
         savedBlockX = floor(playerPos.x).toInt()
         savedBlockY = floor(playerPos.y - 1).toInt()
         savedBlockZ = floor(playerPos.z).toInt()
+        hasSavedStartBlock = true
+    }
+
+    internal fun clearStartBlock() {
+        hasSavedStartBlock = false
     }
 
     @SubscribeEvent
     fun onWorldRender(event: WorldRenderEvent.Start) {
-        if (Main.isToggled()) {
+        if (Main.isToggled() && renderStartBlockBox && hasSavedStartBlock) {
             val blockBox = AABB(
                 savedBlockX.toDouble(), savedBlockY.toDouble(), savedBlockZ.toDouble(),
                 (savedBlockX + 1).toDouble(), (savedBlockY + 1).toDouble(), (savedBlockZ + 1).toDouble()
             )
-            val boxColor = if (renderStartBlockBox) Color(0, 150, 255, 100) else Color(0, 150, 255)
-            Render3D.drawBox(event.context, blockBox, boxColor, esp = true)
+            Render3D.drawBox(event.context, blockBox, Color(0, 150, 255, 100), esp = true)
         }
 
         if (!highlightWormfishSpot) return

@@ -56,6 +56,7 @@ object Main : Module(
 
     fun stop() {
         isToggled = false
+        Visuals.clearStartBlock()
 
         when (mode) {
             0 -> Normal.resetStates()

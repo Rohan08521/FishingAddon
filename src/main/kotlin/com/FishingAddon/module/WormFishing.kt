@@ -33,6 +33,30 @@ object WormFishing : Module("WormFishing Settings") {
         max = 1000.0
     )
 
+    private val hyperionSwapDelay by RangeSetting(
+        name = "Hyperion Swap Delay",
+        description = "Delay between swapping to Hyperion and using it (in ms)",
+        defaultValue = Pair(150.0, 300.0),
+        min = 0.0,
+        max = 1000.0
+    )
+
+    private val fishingSwapDelay by RangeSetting(
+        name = "Rod Swap Delay",
+        description = "Delay between swapping to Rod",
+        defaultValue = Pair(150.0, 300.0),
+        min = 0.0,
+        max = 1000.0
+    )
+
+    private val stateTransitionDelay by RangeSetting(
+        name = "State Transition Delay",
+        description = "Small delays between logic steps (in ms)",
+        defaultValue = Pair(100.0, 200.0),
+        min = 0.0,
+        max = 500.0
+    )
+
     private val bobberTimeout by SliderSetting(
         name = "Bobber Timeout",
         description = "Time to wait for bobber to enter water before recasting (in ms)",
@@ -47,22 +71,6 @@ object WormFishing : Module("WormFishing Settings") {
         defaultValue = Pair(18.0, 20.0),
         min = 1.0,
         max = 20.0
-    )
-
-    private val hyperionSwapDelay by RangeSetting(
-        name = "Hyperion Swap Delay",
-        description = "Delay between swapping to Hyperion and using it (in ms)",
-        defaultValue = Pair(150.0, 300.0),
-        min = 0.0,
-        max = 1000.0
-    )
-
-    private val stateTransitionDelay by RangeSetting(
-        name = "State Transition Delay",
-        description = "Small delays between logic steps (in ms)",
-        defaultValue = Pair(100.0, 200.0),
-        min = 0.0,
-        max = 500.0
     )
 
     private var macroState = MacroState.IDLE
@@ -119,7 +127,7 @@ object WormFishing : Module("WormFishing Settings") {
         when (macroState) {
             MacroState.SWAP_TO_ROD -> {
                 swapToFishingRod()
-                clock.schedule(Random.nextInt(200, 500))
+                clock.schedule(Random.nextInt(fishingSwapDelay.first.toInt(), fishingSwapDelay.second.toInt() + 1))
                 macroState = MacroState.CASTING
             }
 
@@ -140,7 +148,7 @@ object WormFishing : Module("WormFishing Settings") {
 
                     if (bobber == null) {
                         clock.schedule(Random.nextInt(100, 200))
-                        macroState = MacroState.CASTING
+                        macroState = MacroState.SWAP_TO_ROD
                         return
                     }
 
@@ -162,7 +170,7 @@ object WormFishing : Module("WormFishing Settings") {
                     macroState = MacroState.HYPERION_SWAP
                     clock.schedule(getTransitionDelay())
                 } else {
-                    macroState = MacroState.CASTING
+                    macroState = MacroState.SWAP_TO_ROD
                     clock.schedule(getTransitionDelay())
                 }
             }
