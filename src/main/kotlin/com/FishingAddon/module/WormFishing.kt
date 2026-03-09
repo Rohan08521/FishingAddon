@@ -168,8 +168,7 @@ object WormFishing : Module("WormFishing Settings") {
                     clock.schedule(getTransitionDelay())
                     macroState = MacroState.HYPERION_SWAP
                 } else {
-                    clock.schedule(getTransitionDelay())
-                    macroState = MacroState.SWAP_TO_ROD
+                    macroState = MacroState.CASTING
                 }
             }
 
