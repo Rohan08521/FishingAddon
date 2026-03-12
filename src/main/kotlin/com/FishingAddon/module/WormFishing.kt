@@ -45,12 +45,6 @@ object WormFishing : Module("WormFishing Settings") {
         max = 1000.0
     )
 
-    private val detectWormfishSpot by CheckboxSetting(
-        name = "Detect Wormfish Spot",
-        description = "Enable lava spot detection for wormfishing ESP.",
-        defaultValue = true
-    )
-
     private val delayInActions by RangeSetting(
         name = "Delay In Actions",
         description = "Delay range used for rod swaps and combat transitions (in ms)",
@@ -127,7 +121,6 @@ object WormFishing : Module("WormFishing Settings") {
 
     private fun shouldKillSilverfish(): Boolean = countSilverfish() >= currentKillThreshold
 
-    internal fun isWormfishSpotDetectionEnabled(): Boolean = detectWormfishSpot
 
     private fun rotateTo(yaw: Float, pitch: Float, duration: Long = 300L) {
         RotationExecutor.rotateTo(
@@ -248,7 +241,6 @@ object WormFishing : Module("WormFishing Settings") {
         center: BlockPos,
         radius: Int,
     ): List<BlockPos> {
-        if (!detectWormfishSpot) return emptyList()
         val minX = center.x - radius
         val maxX = center.x + radius
         val minZ = center.z - radius
