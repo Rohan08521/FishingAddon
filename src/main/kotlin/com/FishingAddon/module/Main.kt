@@ -37,9 +37,7 @@ object Main : Module(
     )
 
     private var isToggled = false
-    private var isMouseUngrabbed = false
     private var wasKeyPressed = false
-    private var wasUngrabMouseKeyPressed = false
     private var isPausedByScreen = false
     private val mc = Minecraft.getInstance()
 

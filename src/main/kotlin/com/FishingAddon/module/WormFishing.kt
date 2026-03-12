@@ -201,9 +201,9 @@ object WormFishing : Module("WormFishing Settings") {
                 }
             }
             MacroState.HYPERION_ROTATE -> {
-                rotateTo(originalYaw, originalPitch, duration = 300L)
+                rotateTo(originalYaw, 90f, duration = 300L)
+                MacroState.HYPERION_USE
             }
-
             MacroState.HYPERION_USE -> {
                 MouseUtils.rightClick()
                 macroState = MacroState.RESET

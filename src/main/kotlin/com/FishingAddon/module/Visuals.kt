@@ -78,7 +78,7 @@ object Visuals : Module("Visuals") {
             Render3D.drawBox(event.context, blockBox, Color(250, 0, 255, 100), esp = true)
         }
 
-        if (!highlightWormfishSpot || !WormFishing.isWormfishSpotDetectionEnabled()) {
+        if (!highlightWormfishSpot) {
             clearWormfishCache()
             return
         }
