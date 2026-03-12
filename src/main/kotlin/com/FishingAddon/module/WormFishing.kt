@@ -11,10 +11,16 @@ import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.phys.Vec3
 import org.cobalt.api.module.Module
+import org.cobalt.api.module.setting.impl.CheckboxSetting
+import org.cobalt.api.module.setting.impl.ModeSetting
 import org.cobalt.api.module.setting.impl.RangeSetting
 import org.cobalt.api.module.setting.impl.SliderSetting
+import org.cobalt.api.rotation.EasingType
+import org.cobalt.api.rotation.RotationExecutor
+import org.cobalt.api.rotation.strategy.TimedEaseStrategy
 import org.cobalt.api.util.InventoryUtils
 import org.cobalt.api.util.MouseUtils
+import org.cobalt.api.util.helper.Rotation
 
 object WormFishing : Module("WormFishing Settings") {
     private val castDelay by RangeSetting(
@@ -23,6 +29,12 @@ object WormFishing : Module("WormFishing Settings") {
         defaultValue = Pair(100.0, 200.0),
         min = 0.0,
         max = 1000.0
+    )
+    private val killingMode by ModeSetting(
+        name = "Worm Killing Mode",
+        description = "Killing mode",
+        options = arrayOf("Wither impact", "Fire fury/ fire veil"),
+        defaultValue = 0
     )
 
     private val reelInDelay by RangeSetting(
@@ -33,32 +45,22 @@ object WormFishing : Module("WormFishing Settings") {
         max = 1000.0
     )
 
-    private val hyperionSwapDelay by RangeSetting(
-        name = "Hyperion Delay",
-        description = "Delay between swapping to Hyperion and using it (in ms)",
-        defaultValue = Pair(150.0, 300.0),
-        min = 0.0,
-        max = 1000.0
+    private val detectWormfishSpot by CheckboxSetting(
+        name = "Detect Wormfish Spot",
+        description = "Enable lava spot detection for wormfishing ESP.",
+        defaultValue = true
     )
 
-    private val fishingSwapDelay by RangeSetting(
-        name = "Rod Hotbar Delay",
-        description = "Delay between swapping to Rod",
-        defaultValue = Pair(150.0, 300.0),
-        min = 0.0,
+    private val delayInActions by RangeSetting(
+        name = "Delay In Actions",
+        description = "Delay range used for rod swaps and combat transitions (in ms)",
+        defaultValue = Pair(300.0, 1000.0),
+        min = 300.0,
         max = 1000.0
-    )
-
-    private val stateTransitionDelay by RangeSetting(
-        name = "Transition Delay",
-        description = "Small delays between logic steps (in ms)",
-        defaultValue = Pair(100.0, 200.0),
-        min = 0.0,
-        max = 500.0
     )
 
     private val bobberTimeout by SliderSetting(
-        name = "Fishing Rod Failsafe",
+        name = "bobber timeout",
         description = "Time to wait for bobber to enter water before recasting (in ms)",
         defaultValue = 20000.0,
         min = 5000.0,
@@ -78,6 +80,8 @@ object WormFishing : Module("WormFishing Settings") {
     private val mc = Minecraft.getInstance()
     private var waitingStartTime = 0L
     private var currentKillThreshold = 20
+    private var originalYaw = 0f
+    private var originalPitch = 0f
 
     private enum class MacroState {
         IDLE,
@@ -87,7 +91,10 @@ object WormFishing : Module("WormFishing Settings") {
         REELING,
         POST_REEL_DECIDE,
         HYPERION_SWAP,
+        HYPERION_ROTATE,
         HYPERION_USE,
+        FIRE_SWAP,
+        FIRE_USE,
         RESET,
         RESETTING,
     }
@@ -108,8 +115,8 @@ object WormFishing : Module("WormFishing Settings") {
         )
     }
 
-    private fun getTransitionDelay(): Int =
-        Random.nextInt(stateTransitionDelay.first.toInt(), stateTransitionDelay.second.toInt() + 1)
+    private fun getActionDelay(): Int =
+        Random.nextInt(delayInActions.first.toInt(), delayInActions.second.toInt() + 1)
 
     private fun countSilverfish(): Int {
         val entities = mc.level?.entitiesForRendering() ?: return 0
@@ -120,6 +127,15 @@ object WormFishing : Module("WormFishing Settings") {
 
     private fun shouldKillSilverfish(): Boolean = countSilverfish() >= currentKillThreshold
 
+    internal fun isWormfishSpotDetectionEnabled(): Boolean = detectWormfishSpot
+
+    private fun rotateTo(yaw: Float, pitch: Float, duration: Long = 300L) {
+        RotationExecutor.rotateTo(
+            Rotation(yaw, pitch),
+            TimedEaseStrategy(EasingType.LINEAR, EasingType.LINEAR, duration)
+        )
+    }
+
     internal fun onTick() {
         if (!clock.passed()) return
         if (mc.player == null || mc.level == null || mc.gameMode == null) return
@@ -127,7 +143,7 @@ object WormFishing : Module("WormFishing Settings") {
         when (macroState) {
             MacroState.SWAP_TO_ROD -> {
                 swapToFishingRod()
-                clock.schedule(Random.nextInt(fishingSwapDelay.first.toInt(), fishingSwapDelay.second.toInt() + 1))
+                clock.schedule(getActionDelay())
                 macroState = MacroState.CASTING
             }
 
@@ -163,11 +179,21 @@ object WormFishing : Module("WormFishing Settings") {
             }
 
             MacroState.POST_REEL_DECIDE -> {
+                mc.player?.let {
+                    originalYaw = it.yRot
+                    originalPitch = it.xRot
+                }
+
                 if (shouldKillSilverfish()) {
-                    clock.schedule(getTransitionDelay())
-                    macroState = MacroState.HYPERION_SWAP
+                    clock.schedule(getActionDelay())
+                    if (killingMode == 0) {
+                        macroState = MacroState.HYPERION_SWAP
+                    }
+                    if (killingMode == 1) {
+                        macroState = MacroState.FIRE_SWAP
+                    }
                 } else {
-                    macroState = MacroState.CASTING
+                    macroState = MacroState.SWAP_TO_ROD
                 }
             }
 
@@ -175,20 +201,37 @@ object WormFishing : Module("WormFishing Settings") {
                 val hypSlot = InventoryUtils.findItemInHotbar("hyperion")
                 if (hypSlot != -1) {
                     InventoryUtils.holdHotbarSlot(hypSlot)
-                    clock.schedule(Random.nextInt(hyperionSwapDelay.first.toInt(), hyperionSwapDelay.second.toInt() + 1))
+                    clock.schedule(getActionDelay())
                     macroState = MacroState.HYPERION_USE
                 } else {
                     macroState = MacroState.RESET
                 }
+            }
+            MacroState.HYPERION_ROTATE -> {
+                rotateTo(originalYaw, originalPitch, duration = 300L)
             }
 
             MacroState.HYPERION_USE -> {
                 MouseUtils.rightClick()
                 macroState = MacroState.RESET
             }
+            MacroState.FIRE_USE -> {
+                MouseUtils.rightClick()
+                macroState = MacroState.RESET
+            }
+            MacroState.FIRE_SWAP -> {
+                val fireSlot = InventoryUtils.findItemInHotbar("fire")
+                if (fireSlot != -1) {
+                    InventoryUtils.holdHotbarSlot(fireSlot)
+                    clock.schedule(getActionDelay())
+                    macroState = MacroState.FIRE_USE
+                }
+            }
 
             MacroState.RESET -> {
                 generateNewThreshold()
+                rotateTo(originalYaw, originalPitch, duration = 300L)
+                clock.schedule(getActionDelay())
                 macroState = MacroState.SWAP_TO_ROD
             }
 
@@ -205,6 +248,7 @@ object WormFishing : Module("WormFishing Settings") {
         center: BlockPos,
         radius: Int,
     ): List<BlockPos> {
+        if (!detectWormfishSpot) return emptyList()
         val minX = center.x - radius
         val maxX = center.x + radius
         val minZ = center.z - radius

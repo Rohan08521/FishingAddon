@@ -14,6 +14,7 @@ import org.lwjgl.glfw.GLFW
 import org.cobalt.api.module.setting.impl.ModeSetting
 import org.cobalt.api.util.InventoryUtils
 import org.cobalt.api.event.impl.render.NvgEvent
+import org.cobalt.api.module.setting.impl.CheckboxSetting
 
 object Main : Module(
     name = "Main tab",
@@ -23,10 +24,10 @@ object Main : Module(
         description = "Keybind to toggle the macro",
         defaultValue = KeyBind(GLFW.GLFW_KEY_J)
     )
-    var ungrabMouseKeyBind by KeyBindSetting(
-        name = "Ungrab Mouse Keybind",
-        description = "Keybind to toggle mouse grab",
-        defaultValue = KeyBind(GLFW.GLFW_KEY_U)
+    var ungrabMouseToggle by CheckboxSetting(
+        name = "Ungrab Mouse",
+        description = "toggle mouse grab",
+        defaultValue = true
     )
     val mode by ModeSetting(
         name = "FishingMode",
@@ -46,7 +47,9 @@ object Main : Module(
         isToggled = true
 
         Visuals.captureStartBlock()
-
+        if (ungrabMouseToggle == true){
+            MouseUtils.ungrabMouse()
+        }
         when (mode) {
             0 -> Normal.start()
             1 -> SurfStriders.start()
@@ -57,6 +60,9 @@ object Main : Module(
     fun stop() {
         isToggled = false
         Visuals.clearStartBlock()
+        if (ungrabMouseToggle == true){
+            MouseUtils.grabMouse()
+        }
 
         when (mode) {
             0 -> Normal.resetStates()
@@ -67,20 +73,6 @@ object Main : Module(
 
     @SubscribeEvent
     fun keybindListener(event: TickEvent) {
-        val isUngrabMousePressed = ungrabMouseKeyBind.isPressed()
-        if (isUngrabMousePressed && !wasUngrabMouseKeyPressed) {
-            isMouseUngrabbed = !isMouseUngrabbed
-
-            if (isMouseUngrabbed) MouseUtils.ungrabMouse()
-            else MouseUtils.grabMouse()
-
-            ChatUtils.sendMessage(
-                "Ungrab Mouse is now "
-                    + (if (isMouseUngrabbed) "§aEnabled" else "§cDisabled")
-                    + "§r"
-            )
-        }
-        wasUngrabMouseKeyPressed = isUngrabMousePressed
 
         val isPressed = keyBind.isPressed()
         if (isPressed && !wasKeyPressed) {

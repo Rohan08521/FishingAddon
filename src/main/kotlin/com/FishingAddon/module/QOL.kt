@@ -1,5 +1,7 @@
 package com.FishingAddon.module
 
+import com.FishingAddon.util.helper.Clock
+import kotlin.random.Random
 import net.minecraft.client.Minecraft
 import org.cobalt.api.module.Module
 import org.cobalt.api.module.setting.impl.CheckboxSetting
@@ -22,6 +24,7 @@ object QOL : Module(
         description = "Auto Continue Chat with hypixel skyblock npc",
         defaultValue = false
     )
+    private val clock = Clock()
 
     fun sendChatMessage(message: String) {
         var message = message
@@ -37,7 +40,7 @@ object QOL : Module(
 
             val packet = event.packet
             val mc = net.minecraft.client.Minecraft.getInstance()
-
+            if (!clock.passed()) return
             if (packet is net.minecraft.network.protocol.game.ClientboundSystemChatPacket) {
                 val content = packet.content
                 if (content == null) return
@@ -49,6 +52,7 @@ object QOL : Module(
                 if (clickEvent.action() !== ClickEvent.Action.RUN_COMMAND) return
                 if ((clickEvent as ClickEvent.RunCommand).command().startsWith("/selectnpcoption")) {
                     mc.execute({
+                        clock.schedule(Random.nextInt(100,200))
                         sendChatMessage((clickEvent as ClickEvent.RunCommand).command())
                     })
                 }

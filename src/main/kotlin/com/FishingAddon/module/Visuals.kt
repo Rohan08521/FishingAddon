@@ -69,7 +69,7 @@ object Visuals : Module("Visuals") {
     }
 
     @SubscribeEvent
-    fun onWorldRender(event: WorldRenderEvent.Start) {
+    fun onWorldRender(event: WorldRenderEvent.Last) {
         if (Main.isToggled() && renderStartBlockBox && hasSavedStartBlock) {
             val blockBox = AABB(
                 savedBlockX.toDouble(), savedBlockY.toDouble(), savedBlockZ.toDouble(),
@@ -78,7 +78,7 @@ object Visuals : Module("Visuals") {
             Render3D.drawBox(event.context, blockBox, Color(250, 0, 255, 100), esp = true)
         }
 
-        if (!highlightWormfishSpot) {
+        if (!highlightWormfishSpot || !WormFishing.isWormfishSpotDetectionEnabled()) {
             clearWormfishCache()
             return
         }

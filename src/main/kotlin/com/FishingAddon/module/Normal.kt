@@ -51,19 +51,19 @@ object Normal : Module(
         max = 60000.0
     )
 
-    private val killingMode by ModeSetting(
-        name = "Killing Mode",
-        description = "Method to kill sea creatures (if applicable)",
-        defaultValue = 0,
-        options = arrayOf("None", "Melee", "wither impact/yeti sword", "Frozen scythe/spiritsceptre")
-    )
-    private val weaponSlot by SliderSetting(
-        name = "Weapon Slot",
-        description = "Inventory slot of the weapon used for killing",
-        defaultValue = 1.0,
-        min = 1.0,
-        max = 8.0
-    )
+//    private val killingMode by ModeSetting(
+//        name = "Killing Mode",
+//        description = "Method to kill sea creatures (if applicable)",
+//        defaultValue = 0,
+//        options = arrayOf("None", "Melee", "wither impact/yeti sword", "Frozen scythe/spiritsceptre")
+//    )
+//    private val weaponSlot by SliderSetting(
+//        name = "Weapon Slot",
+//        description = "Inventory slot of the weapon used for killing",
+//        defaultValue = 1.0,
+//        min = 1.0,
+//        max = 8.0
+//    )
 
     private var originalYaw = 0f
     private var originalPitch = 0f
@@ -106,7 +106,7 @@ object Normal : Module(
         macroState = MacroState.IDLE
     }
 
-    private fun rotateTo(yaw: Float, pitch: Float, duration: Long = 150L) {
+    private fun rotateTo(yaw: Float, pitch: Float, duration: Long = 300L) {
         RotationExecutor.rotateTo(
             Rotation(yaw, pitch),
             TimedEaseStrategy(EasingType.LINEAR, EasingType.LINEAR, duration)
@@ -140,11 +140,11 @@ object Normal : Module(
                 } else {
                     val bobber = mc.player?.fishing
                     val isBobbing = bobber?.let { it.isInWater || it.isInLava } ?: false
-                    if (bobber == null) {
-                        clock.schedule(Random.nextInt(100, 200))
-                        macroState = MacroState.CASTING
-                        return
-                    }
+                 if (bobber == null && System.currentTimeMillis() - waitingStartTime > bobberTimeout.toLong()) {
+                       clock.schedule(Random.nextInt(100, 200))
+                       macroState = MacroState.CASTING
+                       return
+                 }
 
                     if (!isBobbing && bobber != null && System.currentTimeMillis() - waitingStartTime > bobberTimeout.toLong()) {
                         macroState = MacroState.REELING
